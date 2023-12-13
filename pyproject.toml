@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "pre-commit-dind"
+version = "0.1.0"
+description = "Patches pre-commit to support cgroups version 2."
+authors = ["Niall Byrne <9848926+niall-byrne@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "pre_commit_dind"}]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4.0"
+pre-commit = ">=3.4.0"
+
+[tool.poetry.scripts]
+pre-commit = 'pre_commit_dind:main'
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+mypy = "^1.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
