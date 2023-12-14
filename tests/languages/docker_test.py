@@ -30,26 +30,6 @@ DOCKER_CGROUP_EXAMPLE = b'''\
 0::/system.slice/containerd.service
 '''  # noqa: E501
 
-DOCKER_MOUNTINFO_EXAMPLE = b'''\
-348 271 0:134 / / rw,relatime master:69 - overlay overlay rw,lowerdir=/var/lib/docker/overlay2/l/JA7YFUDZG7HJ6SULPO4D4TOKEC:/var/lib/docker/overlay2/l/UKULGDGAAYVP5Y64C5QUS4RDU6:/var/lib/docker/overlay2/l/CFDV7YE32BB4XONCL3I7PHLOLG:/var/lib/docker/overlay2/l/YND6YIU57TVLAHWVZ2REKMSZ5R:/var/lib/docker/overlay2/l/Z65PZCFL6YK2L6KMZUJRWL4D75:/var/lib/docker/overlay2/l/IFNNE5WOAKIBU246GGLR7467QJ:/var/lib/docker/overlay2/l/53Q7PJSSB3NTJHROSQ5UAN7B4J:/var/lib/docker/overlay2/l/XFZFQXJD356SZBUE5NJRTCHXQ3:/var/lib/docker/overlay2/l/BWCQOGQRVOHSZED2MMUPIKVQLX:/var/lib/docker/overlay2/l/HYQZL6IGWSL2ZWZULQ6DHZ732Q:/var/lib/docker/overlay2/l/BXH4YC7ZTZS5MMFBVAYSFJNAX7:/var/lib/docker/overlay2/l/DTPWRTNSO5WAR5NY3GJV6PTWOP:/var/lib/docker/overlay2/l/LXSI5HTAMHSBTK63TUPEGNH6HO:/var/lib/docker/overlay2/l/22QNDQVKDJTCZC63EF7FWRHVPB:/var/lib/docker/overlay2/l/ETJB5Q6QEWK4Q4KNUT6S3GBXOG:/var/lib/docker/overlay2/l/26IYIZLLAN72UKB7K6EYR3FR3D:/var/lib/docker/overlay2/l/EEHO3GNGKDMVKONTLIKOT3EVHU:/var/lib/docker/overlay2/l/MGVC4ZEVMM6QL6YMZQM7Y7LTWF:/var/lib/docker/overlay2/l/SA2DJVIGM53IDHPDLJOOLHGES2:/var/lib/docker/overlay2/l/GN2H5Q6JYE6CK3Z3LMDKG42ZVT:/var/lib/docker/overlay2/l/6XW2PVALMDQRMQQPUCO5WOXZZR:/var/lib/docker/overlay2/l/VMXVXVKSUWKGHJWQDXHLEJ4L7R:/var/lib/docker/overlay2/l/UDPBCAYVT5MF72CM4S2P6IVQW4:/var/lib/docker/overlay2/l/JNBRKRFDRUOMD2SZSRVVSSC2IM:/var/lib/docker/overlay2/l/T2QWLINEQPKWQPFMK3PXYB6FQ4:/var/lib/docker/overlay2/l/I2EOLGIF6DUE6TYZ72Q7DRVYQ5,upperdir=/var/lib/docker/overlay2/72005e2c75d20205f5151728b8deea74d46de088b16e1119b37f68fe146d9bad/diff,workdir=/var/lib/docker/overlay2/72005e2c75d20205f5151728b8deea74d46de088b16e1119b37f68fe146d9bad/work
-349 348 0:137 / /proc rw,nosuid,nodev,noexec,relatime - proc proc rw
-350 348 0:138 / /dev rw,nosuid - tmpfs tmpfs rw,size=65536k,mode=755
-351 350 0:139 / /dev/pts rw,nosuid,noexec,relatime - devpts devpts rw,gid=5,mode=620,ptmxmode=666
-352 348 0:140 / /sys ro,nosuid,nodev,noexec,relatime - sysfs sysfs ro
-353 352 0:28 / /sys/fs/cgroup ro,nosuid,nodev,noexec,relatime - cgroup2 cgroup rw
-354 350 0:136 / /dev/mqueue rw,nosuid,nodev,noexec,relatime - mqueue mqueue rw
-355 350 0:141 / /dev/shm rw,nosuid,nodev,noexec,relatime - tmpfs shm rw,size=65536k
-357 348 254:1 /docker/containers/c33988ec7651ebc867cb24755eaf637a6734088bc7eef59d5799293a9e5450f7/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/vda1 rw,discard
-358 348 254:1 /docker/containers/c33988ec7651ebc867cb24755eaf637a6734088bc7eef59d5799293a9e5450f7/hostname /etc/hostname rw,relatime - ext4 /dev/vda1 rw,discard
-359 348 254:1 /docker/containers/c33988ec7651ebc867cb24755eaf637a6734088bc7eef59d5799293a9e5450f7/hosts /etc/hosts rw,relatime - ext4 /dev/vda1 rw,discard
-363 348 0:18 /host-services/docker.proxy.sock /run/docker.sock rw,relatime - tmpfs tmpfs rw,size=607780k,mode=755
-272 349 0:137 /bus /proc/bus ro,nosuid,nodev,noexec,relatime - proc proc rw
-273 349 0:137 /fs /proc/fs ro,nosuid,nodev,noexec,relatime - proc proc rw
-274 349 0:137 /irq /proc/irq ro,nosuid,nodev,noexec,relatime - proc proc rw
-275 349 0:137 /sys /proc/sys ro,nosuid,nodev,noexec,relatime - proc proc rw
-281 352 0:143 / /sys/firmware ro,relatime - tmpfs tmpfs ro
-'''  # noqa: E501
-
 # The ID should match the above cgroup example.
 CONTAINER_ID = 'c33988ec7651ebc867cb24755eaf637a6734088bc7eef59d5799293a9e5450f7'  # noqa: E501
 
@@ -69,6 +49,8 @@ NON_DOCKER_CGROUP_EXAMPLE = b'''\
 0::/init.scope
 '''
 
+HOST_PATH_OVERRIDE_EXAMPLE = '/host/path/override'
+
 
 def test_docker_fallback_user():
     def invalid_attribute():
@@ -82,14 +64,9 @@ def test_docker_fallback_user():
         assert docker.get_docker_user() == ()
 
 
-def test__is_in_docker_cgroup_v1_no_file():
-    with mock.patch.object(
-            builtins,
-            'open',
-            side_effect=FileNotFoundError,
-    ) as m_open:
-        assert docker._is_in_docker_cgroup_v1() is False
-        m_open.assert_called_once_with('/proc/1/cgroup', 'rb')
+def test_in_docker_no_file():
+    with mock.patch.object(builtins, 'open', side_effect=FileNotFoundError):
+        assert docker._is_in_docker() is False
 
 
 def _mock_open(data):
@@ -101,104 +78,68 @@ def _mock_open(data):
     )
 
 
-def test_is_in_docker_cgroup_v1_docker_in_file():
-    with _mock_open(DOCKER_CGROUP_EXAMPLE) as m_open:
-        assert docker._is_in_docker_cgroup_v1() is True
-        m_open.assert_called_once_with('/proc/1/cgroup', 'rb')
+def test_in_docker_docker_in_file():
+    with _mock_open(DOCKER_CGROUP_EXAMPLE):
+        assert docker._is_in_docker() is True
 
 
-def test_is_in_docker_cgroup_v1_docker_not_in_file():
-    with _mock_open(NON_DOCKER_CGROUP_EXAMPLE) as m_open:
-        assert docker._is_in_docker_cgroup_v1() is False
-        m_open.assert_called_once_with('/proc/1/cgroup', 'rb')
+def test_in_docker_docker_not_in_file():
+    with _mock_open(NON_DOCKER_CGROUP_EXAMPLE):
+        assert docker._is_in_docker() is False
 
 
-def test_is_in_docker_dockerenv_exists():
-    with mock.patch.object(
-            docker.os.path,
-            'exists',
-            return_value=True,
-    ) as m_exists:
-        assert docker._is_in_docker_dockerenv() is True
-        m_exists.assert_called_once_with('/.dockerenv')
+def test_get_container_id():
+    with _mock_open(DOCKER_CGROUP_EXAMPLE):
+        assert docker._get_container_id() == CONTAINER_ID
 
 
-def test_is_in_docker_dockerenv_not_exists():
-    with mock.patch.object(
-            docker.os.path,
-            'exists',
-            return_value=False,
-    ) as m_exists:
-        assert docker._is_in_docker_dockerenv() is False
-        m_exists.assert_called_once_with('/.dockerenv')
+def test_get_container_id_failure():
+    with _mock_open(b''), pytest.raises(RuntimeError):
+        docker._get_container_id()
 
 
-def test_get_container_id_from_cgroup():
-    with _mock_open(DOCKER_CGROUP_EXAMPLE) as m_open:
-        assert docker._get_container_id_from_cgroup() == CONTAINER_ID
-        m_open.assert_called_once_with('/proc/1/cgroup', 'rb')
-
-
-def test_get_container_id_from_cgroup_failure():
-    with _mock_open(b'') as m_open, pytest.raises(RuntimeError):
-        docker._get_container_id_from_cgroup()
-        m_open.assert_called_once_with('/proc/1/cgroup', 'rb')
-
-
-def test_get_container_id_from_mountinfo():
-    with _mock_open(DOCKER_MOUNTINFO_EXAMPLE) as m_open:
-        assert docker._get_container_id_from_mountinfo() == CONTAINER_ID
-        m_open.assert_called_once_with('/proc/self/mountinfo', 'rb')
-
-
-def test_get_container_id_from_mountinfo_failure():
-    with _mock_open(b'') as m_open, pytest.raises(RuntimeError):
-        docker._get_container_id_from_mountinfo()
-        m_open.assert_called_once_with('/proc/self/mountinfo', 'rb')
-
-
-def test_get_docker_path_not_in_docker_returns_same():
+def test_get_docker_path_not_in_docker_returns_same_no_env_var():
     with mock.patch.object(
             docker,
-            '_is_in_docker_cgroup_v1',
+            '_is_in_docker',
             return_value=False,
+    ), mock.patch.dict(
+        docker.os.environ,
+        {},
+        clear=True,
     ):
-        with mock.patch.object(
-                docker,
-                '_is_in_docker_dockerenv',
-                return_value=False,
-        ):
-            assert docker._get_docker_path('abc') == 'abc'
+        assert docker._get_docker_path('abc') == 'abc'
+
+
+def test_get_docker_path_not_in_docker_returns_override_env_var():
+    with mock.patch.object(
+            docker,
+            '_is_in_docker',
+            return_value=False,
+    ), mock.patch.dict(
+        docker.os.environ,
+        {docker.ENV_VAR_OVERRIDE_HOST_PATH: HOST_PATH_OVERRIDE_EXAMPLE},
+        clear=True,
+    ):
+        assert docker._get_docker_path('abc') == HOST_PATH_OVERRIDE_EXAMPLE
 
 
 @pytest.fixture
-def cgroup_v1():
-    with mock.patch.object(
-            docker,
-            '_is_in_docker_cgroup_v1',
-            return_value=True,
+def in_docker():
+    with mock.patch.dict(
+        docker.os.environ,
+        {},
+        clear=True,
+    ), mock.patch.object(
+        docker,
+        '_is_in_docker',
+        return_value=True,
+    ), mock.patch.object(
+        docker,
+        '_get_container_id',
+        return_value=CONTAINER_ID,
     ):
-        with mock.patch.object(
-            docker,
-            '_get_container_id_from_cgroup',
-            return_value=CONTAINER_ID,
-        ):
-            yield
-
-
-@pytest.fixture
-def cgroup_v2():
-    with mock.patch.object(
-            docker,
-            '_is_in_docker_dockerenv',
-            return_value=True,
-    ):
-        with mock.patch.object(
-            docker,
-            '_get_container_id_from_mountinfo',
-            return_value=CONTAINER_ID,
-        ):
-            yield
+        yield
 
 
 def _linux_commonpath():
@@ -214,18 +155,24 @@ def _docker_output(out):
     return mock.patch.object(docker, 'cmd_output_b', return_value=ret)
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_no_binds_same_path(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_no_binds_same_path(in_docker):
     docker_out = json.dumps([{'Mounts': []}]).encode()
 
     with _docker_output(docker_out):
         assert docker._get_docker_path('abc') == 'abc'
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_binds_path_equal(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_env_var_override():
+    with mock.patch.dict(
+        docker.os.environ,
+        {docker.ENV_VAR_OVERRIDE_HOST_PATH: HOST_PATH_OVERRIDE_EXAMPLE},
+        clear=True,
+    ):
+        assert docker._get_docker_path('/project') == \
+            HOST_PATH_OVERRIDE_EXAMPLE
+
+
+def test_get_docker_path_in_docker_binds_path_equal(in_docker):
     binds_list = [{'Source': '/opt/my_code', 'Destination': '/project'}]
     docker_out = json.dumps([{'Mounts': binds_list}]).encode()
 
@@ -233,9 +180,7 @@ def test_get_docker_path_in_docker_binds_path_equal(scenario, request):
         assert docker._get_docker_path('/project') == '/opt/my_code'
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_binds_path_complex(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_binds_path_complex(in_docker):
     binds_list = [{'Source': '/opt/my_code', 'Destination': '/project'}]
     docker_out = json.dumps([{'Mounts': binds_list}]).encode()
 
@@ -244,9 +189,7 @@ def test_get_docker_path_in_docker_binds_path_complex(scenario, request):
         assert docker._get_docker_path(path) == '/opt/my_code/test/something'
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_no_substring(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_no_substring(in_docker):
     binds_list = [{'Source': '/opt/my_code', 'Destination': '/project'}]
     docker_out = json.dumps([{'Mounts': binds_list}]).encode()
 
@@ -255,9 +198,7 @@ def test_get_docker_path_in_docker_no_substring(scenario, request):
         assert docker._get_docker_path(path) == path
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_binds_path_many_binds(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_binds_path_many_binds(in_docker):
     binds_list = [
         {'Source': '/something_random', 'Destination': '/not-related'},
         {'Source': '/opt/my_code', 'Destination': '/project'},
@@ -269,9 +210,7 @@ def test_get_docker_path_in_docker_binds_path_many_binds(scenario, request):
         assert docker._get_docker_path('/project') == '/opt/my_code'
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_windows(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_windows(in_docker):
     binds_list = [{'Source': r'c:\users\user', 'Destination': r'c:\folder'}]
     docker_out = json.dumps([{'Mounts': binds_list}]).encode()
 
@@ -281,9 +220,7 @@ def test_get_docker_path_in_docker_windows(scenario, request):
         assert docker._get_docker_path(path) == expected
 
 
-@pytest.mark.parametrize('scenario', ['cgroup_v1', 'cgroup_v2'])
-def test_get_docker_path_in_docker_docker_in_docker(scenario, request):
-    request.getfixturevalue(scenario)
+def test_get_docker_path_in_docker_docker_in_docker(in_docker):
     # won't be able to discover "self" container in true docker-in-docker
     err = CalledProcessError(1, (), b'', b'')
     with mock.patch.object(docker, 'cmd_output_b', side_effect=err):

@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 from collections.abc import Sequence
 
 from pre_commit import lang_base
@@ -11,6 +10,7 @@ from pre_commit.prefix import Prefix
 from pre_commit.util import CalledProcessError
 from pre_commit.util import cmd_output_b
 
+ENV_VAR_OVERRIDE_HOST_PATH = 'PRE_COMMIT_OVERRIDE_DOCKER_HOST_PATH'
 ENVIRONMENT_DIR = 'docker'
 PRE_COMMIT_LABEL = 'PRE_COMMIT'
 get_default_version = lang_base.basic_get_default_version
@@ -18,7 +18,7 @@ health_check = lang_base.basic_health_check
 in_env = lang_base.no_env  # no special environment for docker
 
 
-def _is_in_docker_cgroup_v1() -> bool:
+def _is_in_docker() -> bool:
     try:
         with open('/proc/1/cgroup', 'rb') as f:
             return b'docker' in f.read()
@@ -26,11 +26,7 @@ def _is_in_docker_cgroup_v1() -> bool:
         return False
 
 
-def _is_in_docker_dockerenv() -> bool:
-    return os.path.exists('/.dockerenv')
-
-
-def _get_container_id_from_cgroup() -> str:
+def _get_container_id() -> str:
     # It's assumed that we already check /proc/1/cgroup in _is_in_docker. The
     # cpuset cgroup controller existed since cgroups were introduced so this
     # way of getting the container ID is pretty reliable.
@@ -41,29 +37,13 @@ def _get_container_id_from_cgroup() -> str:
     raise RuntimeError('Failed to find the container ID in /proc/1/cgroup.')
 
 
-def _get_container_id_from_mountinfo() -> str:
-    container_id_regex = re.compile(
-        r'.+\s/docker/containers/([a-z0-9]{64})/'
-        r'(resolv.conf|hostname|hosts)\s.+',
-        re.DOTALL,
-    )
-    with open('/proc/self/mountinfo', 'rb') as f:
-        for line in f.readlines():
-            container_id_match = re.match(container_id_regex, line.decode())
-            if container_id_match:
-                return container_id_match.group(1)
-    raise RuntimeError(
-        'Failed to find the container ID in /proc/self/mountinfo.',
-    )
-
-
 def _get_docker_path(path: str) -> str:
-    if _is_in_docker_cgroup_v1():
-        container_id = _get_container_id_from_cgroup()
-    elif _is_in_docker_dockerenv():
-        container_id = _get_container_id_from_mountinfo()
-    else:
+    if ENV_VAR_OVERRIDE_HOST_PATH in os.environ:
+        return os.environ[ENV_VAR_OVERRIDE_HOST_PATH]
+    if not _is_in_docker():
         return path
+
+    container_id = _get_container_id()
 
     try:
         _, out, _ = cmd_output_b('docker', 'inspect', container_id)
